@@ -196,7 +196,14 @@ function getLocalIP() {
   }
   
   const allIPs = getAllIPs();
-  return allIPs.length > 0 ? allIPs[0] : 'localhost';
+  // Always prefer network IPs over localhost
+  // Only return localhost if no network IPs are available
+  if (allIPs.length > 0) {
+    return allIPs[0];
+  }
+  
+  // Fallback to localhost only if no network interfaces found
+  return 'localhost';
 }
 
 // API endpoint to get server IP address(es)

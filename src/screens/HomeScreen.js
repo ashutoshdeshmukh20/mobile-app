@@ -18,8 +18,25 @@ const HomeScreen = () => {
       const response = await fetch('/api/ip');
       if (response.ok) {
         const data = await response.json();
-        // Use primary IP, or first available IP
-        setLocalIP(data.primary || (data.all && data.all[0]) || '');
+        // Always use network IP, never localhost
+        // If accessed via localhost, show the network IP instead
+        const currentHost = window.location.hostname;
+        if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+          // User accessed via localhost - show network IP
+          const networkIP = data.all && data.all.length > 0 ? data.all[0] : data.primary;
+          if (networkIP && networkIP !== 'localhost') {
+            setLocalIP(networkIP);
+            // Optionally redirect to network IP
+            const networkUrl = `http://${networkIP}:${data.port || 3000}`;
+            console.log('⚠️ Accessed via localhost. Network IP:', networkUrl);
+            console.log('💡 Access via network IP for other devices to connect');
+          } else {
+            setLocalIP(data.primary || '');
+          }
+        } else {
+          // Already using network IP
+          setLocalIP(currentHost);
+        }
       } else {
         // Fallback to WebRTC method if API fails
         const pc = new RTCPeerConnection({
@@ -41,8 +58,9 @@ const HomeScreen = () => {
     } catch (error) {
       console.error('Error getting local IP:', error);
       // Fallback: try to get from window.location
-      if (window.location.hostname && window.location.hostname !== 'localhost') {
-        setLocalIP(window.location.hostname);
+      const currentHost = window.location.hostname;
+      if (currentHost && currentHost !== 'localhost' && currentHost !== '127.0.0.1') {
+        setLocalIP(currentHost);
       }
     }
   };
@@ -89,9 +107,26 @@ const HomeScreen = () => {
 
         {localIP && (
           <div className="ip-display">
-            <p>Access this app at:</p>
-            <p className="ip-address">http://{localIP}:3000</p>
-            <p className="ip-note">Share this address with riders to join</p>
+            {(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? (
+              <>
+                <p style={{color: '#ff9800', fontWeight: 'bold'}}>⚠️ Accessing via localhost</p>
+                <p>Use network IP for other devices:</p>
+                <p className="ip-address" style={{fontSize: '1.2em', margin: '10px 0'}}>
+                  <a href={`http://${localIP}:3000`} style={{color: '#4CAF50', textDecoration: 'none'}}>
+                    http://{localIP}:3000
+                  </a>
+                </p>
+                <p className="ip-note" style={{fontSize: '0.9em', color: '#666'}}>
+                  Click the link above or share this address with riders
+                </p>
+              </>
+            ) : (
+              <>
+                <p>Access this app at:</p>
+                <p className="ip-address">http://{localIP}:3000</p>
+                <p className="ip-note">Share this address with riders to join</p>
+              </>
+            )}
           </div>
         )}
 
