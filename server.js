@@ -41,9 +41,61 @@ const STATIC_IP = process.env.STATIC_IP || config.staticIP || null;
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
+// Get all available IP addresses (define functions before routes)
+function getAllIPs() {
+  const interfaces = os.networkInterfaces();
+  const allIPs = [];
+  const hotspotRanges = [];
+  const otherIPs = [];
+  
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        const addr = iface.address;
+        // Skip Docker/container IPs (172.17.x.x, 172.18.x.x, etc.)
+        if (addr.startsWith('172.17.') || 
+            addr.startsWith('172.18.') ||
+            addr.startsWith('172.19.')) {
+          continue;
+        }
+        // Prioritize common hotspot ranges
+        if (addr.startsWith('192.168.') || 
+            addr.startsWith('172.20.') ||
+            addr.startsWith('10.0.')) {
+          hotspotRanges.push(addr);
+        } else {
+          otherIPs.push(addr);
+        }
+      }
+    }
+  }
+  
+  // Combine: hotspot ranges first, then others
+  return [...hotspotRanges, ...otherIPs];
+}
+
+// Get primary local IP address (for backward compatibility)
+function getLocalIP() {
+  // Use static IP if configured (optional)
+  if (STATIC_IP) {
+    return STATIC_IP;
+  }
+  
+  const allIPs = getAllIPs();
+  // Always prefer network IPs over localhost
+  // Only return localhost if no network IPs are available
+  if (allIPs.length > 0) {
+    return allIPs[0];
+  }
+  
+  // Fallback to localhost only if no network interfaces found
+  return 'localhost';
+}
+
 // API routes MUST be defined BEFORE static file serving
 // API endpoint to get server IP address(es)
 app.get('/api/ip', (req, res) => {
+  console.log('API /api/ip requested from:', req.ip, req.headers.host);
   try {
     const allIPs = getAllIPs();
     const primaryIP = getLocalIP();
@@ -188,56 +240,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// Get all available IP addresses
-function getAllIPs() {
-  const interfaces = os.networkInterfaces();
-  const allIPs = [];
-  const hotspotRanges = [];
-  const otherIPs = [];
-  
-  for (const name of Object.keys(interfaces)) {
-    for (const iface of interfaces[name]) {
-      if (iface.family === 'IPv4' && !iface.internal) {
-        const addr = iface.address;
-        // Skip Docker/container IPs (172.17.x.x, 172.18.x.x, etc.)
-        if (addr.startsWith('172.17.') || 
-            addr.startsWith('172.18.') ||
-            addr.startsWith('172.19.')) {
-          continue;
-        }
-        // Prioritize common hotspot ranges
-        if (addr.startsWith('192.168.') || 
-            addr.startsWith('172.20.') ||
-            addr.startsWith('10.0.')) {
-          hotspotRanges.push(addr);
-        } else {
-          otherIPs.push(addr);
-        }
-      }
-    }
-  }
-  
-  // Combine: hotspot ranges first, then others
-  return [...hotspotRanges, ...otherIPs];
-}
-
-// Get primary local IP address (for backward compatibility)
-function getLocalIP() {
-  // Use static IP if configured (optional)
-  if (STATIC_IP) {
-    return STATIC_IP;
-  }
-  
-  const allIPs = getAllIPs();
-  // Always prefer network IPs over localhost
-  // Only return localhost if no network IPs are available
-  if (allIPs.length > 0) {
-    return allIPs[0];
-  }
-  
-  // Fallback to localhost only if no network interfaces found
-  return 'localhost';
-}
+// Functions moved above - they're now defined before the API route
 
 // Fallback route for React Router (production only) - MUST be last
 // This catches all routes not matched above (like /host, /join, /call)
