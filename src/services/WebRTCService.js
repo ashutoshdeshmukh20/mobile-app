@@ -88,6 +88,7 @@ class WebRTCService {
   connectSignaling() {
     // Clean up existing socket if any
     if (this.socket) {
+      this.socket.removeAllListeners();
       this.socket.disconnect();
       this.socket = null;
     }
@@ -106,7 +107,9 @@ class WebRTCService {
 
     this.socket.on('connect', () => {
       console.log('Connected to signaling server');
+      // Join room if sessionId is already set
       if (this.sessionId) {
+        console.log('Joining room:', this.sessionId, 'as', this.role);
         this.socket.emit('join-room', this.sessionId, this.role);
       }
     });
@@ -270,25 +273,37 @@ class WebRTCService {
       
       // Wait for socket connection with timeout
       await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Connection timeout: Could not connect to server. Please check your network connection.'));
-        }, 10000); // 10 second timeout
-        
+        // Check if already connected
         if (this.socket && this.socket.connected) {
-          clearTimeout(timeout);
+          // Already connected, emit join-room
+          console.log('Socket already connected, joining room');
+          this.socket.emit('join-room', this.sessionId, this.role);
           resolve();
           return;
         }
         
-        this.socket.once('connect', () => {
-          clearTimeout(timeout);
-          resolve();
-        });
+        const timeout = setTimeout(() => {
+          reject(new Error('Connection timeout: Could not connect to server. Please check your network connection.'));
+        }, 10000); // 10 second timeout
         
-        this.socket.once('connect_error', (error) => {
+        const connectHandler = () => {
           clearTimeout(timeout);
+          console.log('Socket connected, joining room');
+          this.socket.emit('join-room', this.sessionId, this.role);
+          this.socket.off('connect', connectHandler);
+          this.socket.off('connect_error', errorHandler);
+          resolve();
+        };
+        
+        const errorHandler = (error) => {
+          clearTimeout(timeout);
+          this.socket.off('connect', connectHandler);
+          this.socket.off('connect_error', errorHandler);
           reject(new Error('Could not connect to server: ' + (error.message || 'Connection failed')));
-        });
+        };
+        
+        this.socket.on('connect', connectHandler);
+        this.socket.on('connect_error', errorHandler);
       });
       
       // Now try to initialize local stream (mic permission)
@@ -322,25 +337,37 @@ class WebRTCService {
       
       // Wait for socket connection with timeout
       await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Connection timeout: Could not connect to server. Please check your network connection.'));
-        }, 10000); // 10 second timeout
-        
+        // Check if already connected
         if (this.socket && this.socket.connected) {
-          clearTimeout(timeout);
+          // Already connected, emit join-room
+          console.log('Socket already connected, joining room');
+          this.socket.emit('join-room', this.sessionId, this.role);
           resolve();
           return;
         }
         
-        this.socket.once('connect', () => {
-          clearTimeout(timeout);
-          resolve();
-        });
+        const timeout = setTimeout(() => {
+          reject(new Error('Connection timeout: Could not connect to server. Please check your network connection.'));
+        }, 10000); // 10 second timeout
         
-        this.socket.once('connect_error', (error) => {
+        const connectHandler = () => {
           clearTimeout(timeout);
+          console.log('Socket connected, joining room');
+          this.socket.emit('join-room', this.sessionId, this.role);
+          this.socket.off('connect', connectHandler);
+          this.socket.off('connect_error', errorHandler);
+          resolve();
+        };
+        
+        const errorHandler = (error) => {
+          clearTimeout(timeout);
+          this.socket.off('connect', connectHandler);
+          this.socket.off('connect_error', errorHandler);
           reject(new Error('Could not connect to server: ' + (error.message || 'Connection failed')));
-        });
+        };
+        
+        this.socket.on('connect', connectHandler);
+        this.socket.on('connect_error', errorHandler);
       });
       
       // Now try to initialize local stream (mic permission)
