@@ -1,0 +1,153 @@
+.home-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background-color: #f5f5f5;
+}
+
+.home-content {
+  max-width: 500px;
+  width: 100%;
+}
+
+.home-title {
+  font-size: 32px;
+  font-weight: bold;
+  color: #2196F3;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.home-subtitle {
+  font-size: 16px;
+  color: #666;
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.ip-display {
+  background: #E3F2FD;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  text-align: center;
+  border-left: 4px solid #2196F3;
+}
+
+.ip-display p {
+  margin: 5px 0;
+  color: #1976D2;
+}
+
+.ip-address {
+  font-size: 18px;
+  font-weight: bold;
+  font-family: monospace;
+  color: #1565C0;
+}
+
+.ip-note {
+  font-size: 12px;
+  color: #1976D2;
+}
+
+.network-status {
+  background: #fff;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.network-label {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.network-value {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.network-value.connected {
+  color: #4CAF50;
+}
+
+.network-value.disconnected {
+  color: #F44336;
+}
+
+.network-type {
+  font-size: 12px;
+  color: #999;
+}
+
+.button-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.host-button,
+.join-button {
+  padding: 25px;
+  border-radius: 15px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.host-button {
+  background-color: #4CAF50;
+}
+
+.join-button {
+  background-color: #2196F3;
+}
+
+.host-button:hover,
+.join-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0,0,0,0.4);
+}
+
+.host-button:active,
+.join-button:active {
+  transform: translateY(0);
+}
+
+.button-text {
+  color: #fff;
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.button-subtext {
+  color: #fff;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.info-box {
+  margin-top: 30px;
+  background: #E3F2FD;
+  padding: 15px;
+  border-radius: 10px;
+  border-left: 4px solid #2196F3;
+}
+
+.info-text {
+  font-size: 14px;
+  color: #1976D2;
+  line-height: 20px;
+}
+

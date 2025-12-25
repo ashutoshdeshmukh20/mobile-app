@@ -1,0 +1,113 @@
+.call-screen {
+  min-height: 100vh;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.call-container {
+  width: 100%;
+  max-width: 600px;
+}
+
+.call-info {
+  background: rgba(0, 0, 0, 0.7);
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.session-id {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.status {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.status.connected {
+  color: #4CAF50;
+}
+
+.status.connecting {
+  color: #FF9800;
+}
+
+.status.disconnected,
+.status.connection-failed {
+  color: #F44336;
+}
+
+.audio-container {
+  display: none;
+}
+
+.waiting-placeholder {
+  background: #1a1a1a;
+  padding: 40px;
+  border-radius: 10px;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.waiting-placeholder p {
+  color: #fff;
+  font-size: 18px;
+}
+
+.call-controls {
+  display: flex;
+  justify-content: space-around;
+  gap: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 30px;
+  border-radius: 10px;
+}
+
+.control-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.control-button:hover {
+  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.control-button.active {
+  background: rgba(76, 175, 80, 0.8);
+}
+
+.control-button.end-call {
+  background: #F44336;
+}
+
+.control-button.end-call:hover {
+  background: #da190b;
+}
+
+.control-label {
+  font-size: 10px;
+  font-weight: 600;
+  margin-top: 5px;
+}
+

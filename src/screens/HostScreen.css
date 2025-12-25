@@ -1,0 +1,163 @@
+.host-screen {
+  min-height: 100vh;
+  padding: 20px;
+  background-color: #f5f5f5;
+}
+
+.host-content {
+  max-width: 600px;
+  margin: 0 auto;
+  padding-top: 40px;
+}
+
+.host-title {
+  font-size: 28px;
+  font-weight: bold;
+  color: #2196F3;
+  margin-bottom: 10px;
+}
+
+.host-subtitle {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 30px;
+}
+
+.session-box {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.session-label {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.session-input {
+  width: 100%;
+  border: 2px solid #2196F3;
+  border-radius: 8px;
+  padding: 15px;
+  font-size: 18px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-align: center;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+}
+
+.generate-button {
+  width: 100%;
+  background: #E3F2FD;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  color: #2196F3;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.generate-button:hover {
+  background: #BBDEFB;
+}
+
+.generate-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.start-button,
+.stop-button {
+  width: 100%;
+  padding: 20px;
+  border-radius: 10px;
+  border: none;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.start-button {
+  background: #4CAF50;
+  color: #fff;
+}
+
+.start-button:hover {
+  background: #45a049;
+}
+
+.start-button.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.stop-button {
+  background: #F44336;
+  color: #fff;
+}
+
+.stop-button:hover {
+  background: #da190b;
+}
+
+.active-container {
+  margin-bottom: 20px;
+}
+
+.active-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #E8F5E9;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.active-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #4CAF50;
+  margin-right: 10px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.active-text {
+  color: #4CAF50;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.info-box {
+  background: #FFF3E0;
+  padding: 15px;
+  border-radius: 10px;
+  border-left: 4px solid #FF9800;
+}
+
+.info-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #E65100;
+  margin-bottom: 10px;
+}
+
+.info-text {
+  font-size: 14px;
+  color: #E65100;
+  line-height: 22px;
+}
+
