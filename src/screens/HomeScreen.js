@@ -14,24 +14,36 @@ const HomeScreen = () => {
 
   const getLocalIP = async () => {
     try {
-      // Get local IP from WebRTC
-      const pc = new RTCPeerConnection({
-        iceServers: [{urls: 'stun:stun.l.google.com:19302'}],
-      });
-      pc.createDataChannel('');
-      pc.onicecandidate = (e) => {
-        if (e.candidate) {
-          const candidate = e.candidate.candidate;
-          const match = candidate.match(/([0-9]{1,3}(\.[0-9]{1,3}){3})/);
-          if (match && !match[1].startsWith('0.') && match[1] !== '127.0.0.1') {
-            setLocalIP(match[1]);
-            pc.close();
+      // Get IP from server API (more reliable than WebRTC)
+      const response = await fetch('/api/ip');
+      if (response.ok) {
+        const data = await response.json();
+        // Use primary IP, or first available IP
+        setLocalIP(data.primary || (data.all && data.all[0]) || '');
+      } else {
+        // Fallback to WebRTC method if API fails
+        const pc = new RTCPeerConnection({
+          iceServers: [{urls: 'stun:stun.l.google.com:19302'}],
+        });
+        pc.createDataChannel('');
+        pc.onicecandidate = (e) => {
+          if (e.candidate) {
+            const candidate = e.candidate.candidate;
+            const match = candidate.match(/([0-9]{1,3}(\.[0-9]{1,3}){3})/);
+            if (match && !match[1].startsWith('0.') && match[1] !== '127.0.0.1') {
+              setLocalIP(match[1]);
+              pc.close();
+            }
           }
-        }
-      };
-      pc.createOffer().then((offer) => pc.setLocalDescription(offer));
+        };
+        pc.createOffer().then((offer) => pc.setLocalDescription(offer));
+      }
     } catch (error) {
       console.error('Error getting local IP:', error);
+      // Fallback: try to get from window.location
+      if (window.location.hostname && window.location.hostname !== 'localhost') {
+        setLocalIP(window.location.hostname);
+      }
     }
   };
 

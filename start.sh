@@ -7,11 +7,13 @@ echo ""
 if [ ! -f .env ]; then
     echo "Creating .env file from .env.example..."
     cp .env.example .env 2>/dev/null || echo "# Server Configuration
+# IP detection is automatic - STATIC_IP is optional
+# Only set STATIC_IP if auto-detection fails
 PORT=3000
-STATIC_IP=
+# STATIC_IP=
 NODE_ENV=production" > .env
-    echo "⚠️  Please edit .env file and set STATIC_IP to your hotspot IP address"
-    echo "   Example: STATIC_IP=192.168.43.1"
+    echo "✅ IP address will be auto-detected dynamically"
+    echo "   (You can optionally set STATIC_IP in .env if needed)"
     echo ""
 fi
 
@@ -33,7 +35,7 @@ fi
 # Start the server in production mode
 echo ""
 echo "Starting server..."
-echo "The app will be accessible on your local network IP"
+echo "IP address will be auto-detected and displayed"
 echo ""
 
 NODE_ENV=production node server.js

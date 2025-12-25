@@ -58,7 +58,15 @@ npm install --legacy-peer-deps
 npm run build
 ```
 
-### Step 6: Configure Static IP
+### Step 6: Configure Network (IMPORTANT!)
+
+**Option A: Use the setup script (Recommended)**
+```bash
+# Run the automated setup script
+./termux-setup.sh
+```
+
+**Option B: Manual configuration**
 ```bash
 # Edit .env file
 nano .env
@@ -68,6 +76,12 @@ STATIC_IP=192.168.43.1
 PORT=3000
 NODE_ENV=production
 ```
+
+**⚠️ CRITICAL: Configure Android Firewall**
+Before starting the server, you MUST allow network access:
+1. Install Termux API: `pkg install termux-api`
+2. Go to: Settings → Apps → Termux → Permissions → Enable "Network"
+3. See `TERMUX_FIREWALL_FIX.md` for detailed instructions
 
 ### Step 7: Start the Server
 ```bash
@@ -98,10 +112,25 @@ More complex, requires Android development setup.
 
 ## Troubleshooting
 
+### Network Access Issues (Most Common Problem)
+
+**If other devices can't access the server even when connected to hotspot:**
+
+This is usually due to Android's firewall blocking incoming connections. See **[TERMUX_FIREWALL_FIX.md](TERMUX_FIREWALL_FIX.md)** for detailed instructions.
+
+**Quick Fix:**
+1. Install Termux API: `pkg install termux-api`
+2. Grant network permissions in Android Settings → Apps → Termux → Permissions
+3. Ensure your `.env` has the correct `STATIC_IP` (usually `192.168.43.1` for Android hotspot)
+4. Verify server is listening on `0.0.0.0:3000` (not just `127.0.0.1`)
+
+### Other Issues
+
 - **Port 3000 blocked**: Use a different port in .env
 - **Can't install Node.js**: Update Termux: `pkg update`
 - **Permission denied**: Run `termux-setup-storage` first
 - **Network issues**: Check firewall, ensure hotspot is active
+- **Wrong IP address**: Manually set `STATIC_IP` in `.env` file
 
 ## Quick Start (Computer Method)
 

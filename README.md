@@ -8,19 +8,9 @@ All dependencies installed and app built successfully.
 
 ## 🚀 How to Start
 
-### Set Static IP (Recommended)
-
-To keep the IP address constant, create a `.env` file:
-
-```bash
-STATIC_IP=192.168.43.1
-PORT=3000
-NODE_ENV=production
-```
-
-Replace `192.168.43.1` with your actual hotspot IP address.
-
 ### Start the Server
+
+The server automatically detects your IP address dynamically - no configuration needed!
 
 ```bash
 ./start.sh
@@ -34,9 +24,26 @@ npm run serve
 
 The server will display:
 - **Local**: `http://localhost:3000`
-- **Network**: `http://YOUR_STATIC_IP:3000` ← Share this with riders
+- **Network**: Multiple IP addresses will be shown - use any of them!
 
-**Note**: If you don't set STATIC_IP, the server will auto-detect, but it may change.
+**Example output:**
+```
+🌐 Network Addresses (use any of these):
+   http://192.168.43.1:3000 ⭐
+   http://192.168.1.100:3000
+```
+
+### Optional: Set Static IP
+
+If you want to force a specific IP address, create a `.env` file:
+
+```bash
+STATIC_IP=192.168.43.1  # Optional - auto-detection works without this
+PORT=3000
+NODE_ENV=production
+```
+
+**Note**: IP detection is fully automatic. Setting STATIC_IP is optional and only needed if auto-detection fails.
 
 ## 📱 Usage
 
@@ -44,10 +51,11 @@ The server will display:
 
 1. Enable mobile hotspot on your device
 2. Start the server: `npm run serve`
-3. Open browser: `http://YOUR_LOCAL_IP:3000`
-4. Click "HOST"
-5. Share Session ID and Network IP with riders
-6. Click "Start Session"
+3. The server will show your network IP address(es) automatically
+4. Open browser: `http://YOUR_NETWORK_IP:3000` (use any IP shown by server)
+5. Click "HOST"
+6. Share Session ID and Network IP with riders
+7. Click "Start Session"
 
 ### Join a Session
 
@@ -74,6 +82,7 @@ The server will display:
 ## ⚠️ Important Notes
 
 - **Firewall**: Ensure port 3000 is open
+- **Termux Users**: If running on Termux and other devices can't access the server, see `TERMUX_FIREWALL_FIX.md` for solutions
 - **Permissions**: Browser will ask for microphone permission
 - **Network**: All devices must be on the same network (hotspot)
 - **HTTPS**: Some browsers require HTTPS for microphone (localhost works without HTTPS)

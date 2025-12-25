@@ -136,46 +136,62 @@ io.on('connection', (socket) => {
   });
 });
 
-// Get local IP address
+// Get all available IP addresses
+function getAllIPs() {
+  const interfaces = os.networkInterfaces();
+  const allIPs = [];
+  const hotspotRanges = [];
+  const otherIPs = [];
+  
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        const addr = iface.address;
+        // Skip Docker/container IPs (172.17.x.x, 172.18.x.x, etc.)
+        if (addr.startsWith('172.17.') || 
+            addr.startsWith('172.18.') ||
+            addr.startsWith('172.19.')) {
+          continue;
+        }
+        // Prioritize common hotspot ranges
+        if (addr.startsWith('192.168.') || 
+            addr.startsWith('172.20.') ||
+            addr.startsWith('10.0.')) {
+          hotspotRanges.push(addr);
+        } else {
+          otherIPs.push(addr);
+        }
+      }
+    }
+  }
+  
+  // Combine: hotspot ranges first, then others
+  return [...hotspotRanges, ...otherIPs];
+}
+
+// Get primary local IP address (for backward compatibility)
 function getLocalIP() {
-  // Use static IP if configured
+  // Use static IP if configured (optional)
   if (STATIC_IP) {
     return STATIC_IP;
   }
   
-  // Try to find hotspot IP (common patterns)
-  const interfaces = os.networkInterfaces();
-  const preferredInterfaces = ['wlan0', 'wlp', 'wifi', 'eth0', 'en0'];
-  
-  // First, try preferred interfaces (usually WiFi/hotspot)
-  for (const prefName of preferredInterfaces) {
-    for (const name of Object.keys(interfaces)) {
-      if (name.toLowerCase().includes(prefName.toLowerCase())) {
-        for (const iface of interfaces[name]) {
-          if (iface.family === 'IPv4' && !iface.internal) {
-            return iface.address;
-          }
-        }
-      }
-    }
-  }
-  
-  // Fallback: find any non-internal IPv4
-  for (const name of Object.keys(interfaces)) {
-    for (const iface of interfaces[name]) {
-      if (iface.family === 'IPv4' && !iface.internal) {
-        // Skip Docker/container IPs (172.17.x.x, 172.18.x.x, etc.)
-        if (!iface.address.startsWith('172.17.') && 
-            !iface.address.startsWith('172.18.') &&
-            !iface.address.startsWith('172.19.')) {
-          return iface.address;
-        }
-      }
-    }
-  }
-  
-  return 'localhost';
+  const allIPs = getAllIPs();
+  return allIPs.length > 0 ? allIPs[0] : 'localhost';
 }
+
+// API endpoint to get server IP address(es)
+app.get('/api/ip', (req, res) => {
+  const allIPs = getAllIPs();
+  const primaryIP = getLocalIP();
+  res.json({
+    primary: primaryIP,
+    all: allIPs,
+    port: PORT,
+    url: `http://${primaryIP}:${PORT}`,
+    urls: allIPs.map(ip => `http://${ip}:${PORT}`)
+  });
+});
 
 // Fallback route for React Router (production only)
 if (process.env.NODE_ENV === 'production') {
@@ -186,15 +202,33 @@ if (process.env.NODE_ENV === 'production') {
 
 server.listen(PORT, '0.0.0.0', () => {
   const localIP = getLocalIP();
+  const allIPs = getAllIPs();
+  
   console.log('\n🚀 Server is running!');
   console.log(`📱 Local:   http://localhost:${PORT}`);
-  console.log(`🌐 Network: http://${localIP}:${PORT}`);
+  
+  if (allIPs.length > 0) {
+    console.log(`\n🌐 Network Addresses (use any of these):`);
+    allIPs.forEach((ip, index) => {
+      const marker = index === 0 ? ' ⭐' : '';
+      console.log(`   http://${ip}:${PORT}${marker}`);
+    });
+    if (STATIC_IP && STATIC_IP !== localIP) {
+      console.log(`\n⚠️  Note: STATIC_IP is set to ${STATIC_IP}, but detected IP is ${localIP}`);
+      console.log(`   Using detected IP: ${localIP}`);
+    }
+  } else {
+    console.log(`🌐 Network: http://${localIP}:${PORT}`);
+    console.log(`⚠️  Could not detect network IP. Using: ${localIP}`);
+  }
+  
   console.log(`\nMode: ${process.env.NODE_ENV || 'development'}`);
   if (process.env.NODE_ENV !== 'production') {
     console.log('⚠️  Run "npm start" in another terminal for React dev server');
     console.log('   Or run "npm run build" then restart for production mode\n');
   } else {
-    console.log('\nShare the network address with riders to join!\n');
+    console.log('\n💡 Tip: IP address is auto-detected dynamically');
+    console.log('   Share any of the network addresses above with riders to join!\n');
   }
 });
 

@@ -1,6 +1,15 @@
-# Setting a Static IP Address
+# Setting a Static IP Address (Optional)
 
-The server IP address can change if you have multiple network interfaces. To keep it static, you have two options:
+**Note**: The server now automatically detects your IP address dynamically. Setting a static IP is **optional** and only needed if:
+- Auto-detection fails or shows the wrong IP
+- You want to force a specific IP address
+- You have multiple network interfaces and want to choose one
+
+If auto-detection works for you, you don't need to set STATIC_IP at all!
+
+## When to Use Static IP
+
+The server will automatically detect and display all available IP addresses. You can use any of them. Only set STATIC_IP if you need to override the auto-detection.
 
 ## Option 1: Using .env file (Recommended)
 
