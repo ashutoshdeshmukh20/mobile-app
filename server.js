@@ -16,10 +16,12 @@ const io = socketIo(server, {
     methods: ['GET', 'POST'],
     credentials: true,
   },
-  transports: ['websocket', 'polling'],
+  transports: ['polling', 'websocket'], // Try polling first (more reliable)
   allowEIO3: true, // Allow Engine.IO v3 clients
-  pingTimeout: 60000,
-  pingInterval: 25000,
+  pingTimeout: 60000, // 60 seconds
+  pingInterval: 25000, // 25 seconds
+  connectTimeout: 20000, // 20 seconds connection timeout
+  upgradeTimeout: 10000, // 10 seconds for upgrade from polling to websocket
 });
 
 // Load config if exists

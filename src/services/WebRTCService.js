@@ -96,13 +96,16 @@ class WebRTCService {
     const serverUrl = window.location.origin;
     console.log('Connecting to signaling server:', serverUrl);
     
+    // Try polling first (more reliable on mobile networks), then websocket
     this.socket = io(serverUrl, {
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'], // Try polling first
       reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
-      timeout: 10000, // 10 second connection timeout
+      reconnectionDelay: 2000,
+      reconnectionAttempts: 10,
+      timeout: 20000, // 20 second connection timeout (increased for mobile networks)
       forceNew: true, // Force new connection
+      upgrade: true, // Allow upgrade from polling to websocket
+      rememberUpgrade: false, // Don't remember upgrade preference
     });
 
     this.socket.on('connect', () => {
@@ -116,9 +119,32 @@ class WebRTCService {
 
     this.socket.on('connect_error', (error) => {
       console.error('Connection error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        type: error.type,
+        description: error.description
+      });
+      
+      // Provide more helpful error message
+      if (error.message === 'timeout') {
+        console.error('Connection timeout. Possible causes:');
+        console.error('1. Server is not running');
+        console.error('2. Firewall blocking connection');
+        console.error('3. Network connectivity issues');
+        console.error('4. Wrong IP address');
+      }
+      
       if (this.onConnectionStateChange) {
         this.onConnectionStateChange('failed');
       }
+    });
+    
+    this.socket.on('reconnect_attempt', (attemptNumber) => {
+      console.log(`Reconnection attempt ${attemptNumber}...`);
+    });
+    
+    this.socket.on('reconnect_failed', () => {
+      console.error('Failed to reconnect after all attempts');
     });
 
     this.socket.on('disconnect', (reason) => {
