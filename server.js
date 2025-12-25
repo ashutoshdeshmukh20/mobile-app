@@ -14,7 +14,12 @@ const io = socketIo(server, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST'],
+    credentials: true,
   },
+  transports: ['websocket', 'polling'],
+  allowEIO3: true, // Allow Engine.IO v3 clients
+  pingTimeout: 60000,
+  pingInterval: 25000,
 });
 
 // Load config if exists
@@ -58,35 +63,45 @@ const rooms = new Map();
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
+  console.log('Socket transport:', socket.conn.transport.name);
 
   socket.on('join-room', (roomId, role) => {
     if (!roomId) {
       console.error('Invalid roomId:', roomId);
+      socket.emit('error', { message: 'Invalid room ID' });
       return;
     }
     
-    socket.join(roomId);
-    socket.roomId = roomId;
-    socket.role = role || 'client';
+    try {
+      socket.join(roomId);
+      socket.roomId = roomId;
+      socket.role = role || 'client';
 
-    if (!rooms.has(roomId)) {
-      rooms.set(roomId, new Set());
+      if (!rooms.has(roomId)) {
+        rooms.set(roomId, new Set());
+      }
+      
+      const room = rooms.get(roomId);
+      const existingUsers = Array.from(room);
+      room.add(socket.id);
+
+      // Notify the new user about existing users (if any)
+      if (existingUsers.length > 0) {
+        existingUsers.forEach(userId => {
+          socket.emit('user-joined', userId);
+        });
+      }
+
+      // Notify others in the room about the new user
+      socket.to(roomId).emit('user-joined', socket.id);
+      console.log(`User ${socket.id} joined room ${roomId} as ${socket.role}`);
+      
+      // Send confirmation to client
+      socket.emit('room-joined', { roomId, role: socket.role });
+    } catch (error) {
+      console.error('Error joining room:', error);
+      socket.emit('error', { message: 'Failed to join room: ' + error.message });
     }
-    
-    const room = rooms.get(roomId);
-    const existingUsers = Array.from(room);
-    room.add(socket.id);
-
-    // Notify the new user about existing users (if any)
-    if (existingUsers.length > 0) {
-      existingUsers.forEach(userId => {
-        socket.emit('user-joined', userId);
-      });
-    }
-
-    // Notify others in the room about the new user
-    socket.to(roomId).emit('user-joined', socket.id);
-    console.log(`User ${socket.id} joined room ${roomId} as ${socket.role}`);
   });
 
   socket.on('offer', (data) => {
@@ -122,8 +137,12 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
+  socket.on('error', (error) => {
+    console.error('Socket error:', error);
+  });
+
+  socket.on('disconnect', (reason) => {
+    console.log('User disconnected:', socket.id, 'Reason:', reason);
     if (socket.roomId) {
       socket.to(socket.roomId).emit('user-left', socket.id);
       if (rooms.has(socket.roomId)) {

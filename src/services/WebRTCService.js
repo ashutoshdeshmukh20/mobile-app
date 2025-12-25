@@ -55,6 +55,12 @@ class WebRTCService {
 
   // Connect to signaling server
   connectSignaling() {
+    // Clean up existing socket if any
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
+    
     const serverUrl = window.location.origin;
     console.log('Connecting to signaling server:', serverUrl);
     
@@ -63,6 +69,8 @@ class WebRTCService {
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 5,
+      timeout: 10000, // 10 second connection timeout
+      forceNew: true, // Force new connection
     });
 
     this.socket.on('connect', () => {
@@ -130,6 +138,17 @@ class WebRTCService {
         this.connectedPeers.delete(userId);
       }
     });
+
+    this.socket.on('room-joined', (data) => {
+      console.log('Successfully joined room:', data);
+    });
+
+    this.socket.on('error', (error) => {
+      console.error('Socket error from server:', error);
+      if (this.onConnectionStateChange) {
+        this.onConnectionStateChange('error');
+      }
+    });
   }
 
   // Create peer connection
@@ -184,15 +203,49 @@ class WebRTCService {
     try {
       this.sessionId = sessionId;
       
-      // Initialize local stream
-      await this.initializeLocalStream();
-      
-      // Connect to signaling server
+      // Connect to signaling server first
       this.connectSignaling();
+      
+      // Wait for socket connection with timeout
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Connection timeout: Could not connect to server. Please check your network connection.'));
+        }, 10000); // 10 second timeout
+        
+        if (this.socket && this.socket.connected) {
+          clearTimeout(timeout);
+          resolve();
+          return;
+        }
+        
+        this.socket.once('connect', () => {
+          clearTimeout(timeout);
+          resolve();
+        });
+        
+        this.socket.once('connect_error', (error) => {
+          clearTimeout(timeout);
+          reject(new Error('Could not connect to server: ' + (error.message || 'Connection failed')));
+        });
+      });
+      
+      // Now try to initialize local stream (mic permission)
+      try {
+        await this.initializeLocalStream();
+      } catch (micError) {
+        console.warn('Microphone access failed, but continuing connection:', micError);
+        // Don't throw - allow connection without mic
+        // The user can still host but won't be able to speak
+      }
       
       return true;
     } catch (error) {
       console.error('Error starting host:', error);
+      // Clean up socket if connection failed
+      if (this.socket) {
+        this.socket.disconnect();
+        this.socket = null;
+      }
       throw error;
     }
   }
@@ -202,15 +255,50 @@ class WebRTCService {
     try {
       this.sessionId = sessionId;
       
-      // Initialize local stream
-      await this.initializeLocalStream();
-      
-      // Connect to signaling server
+      // Connect to signaling server first (before requesting mic)
       this.connectSignaling();
+      
+      // Wait for socket connection with timeout
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Connection timeout: Could not connect to server. Please check your network connection.'));
+        }, 10000); // 10 second timeout
+        
+        if (this.socket && this.socket.connected) {
+          clearTimeout(timeout);
+          resolve();
+          return;
+        }
+        
+        this.socket.once('connect', () => {
+          clearTimeout(timeout);
+          resolve();
+        });
+        
+        this.socket.once('connect_error', (error) => {
+          clearTimeout(timeout);
+          reject(new Error('Could not connect to server: ' + (error.message || 'Connection failed')));
+        });
+      });
+      
+      // Now try to initialize local stream (mic permission)
+      // If this fails, we still allow connection but show warning
+      try {
+        await this.initializeLocalStream();
+      } catch (micError) {
+        console.warn('Microphone access failed, but continuing connection:', micError);
+        // Don't throw - allow connection without mic
+        // The user can still join but won't be able to speak
+      }
       
       return true;
     } catch (error) {
       console.error('Error joining session:', error);
+      // Clean up socket if connection failed
+      if (this.socket) {
+        this.socket.disconnect();
+        this.socket = null;
+      }
       throw error;
     }
   }

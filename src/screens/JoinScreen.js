@@ -21,7 +21,7 @@ const JoinScreen = () => {
 
   const handleJoinSession = async () => {
     if (!sessionId.trim()) {
-      alert('Error', 'Please enter a session ID');
+      alert('Please enter a session ID');
       return;
     }
 
@@ -34,13 +34,13 @@ const JoinScreen = () => {
         });
       } else {
         alert(
-          'Connection Failed',
-          'Could not connect to the session. Please check:\n\n1. Session ID is correct\n2. You are connected to the host\'s hotspot\n3. Host has started the session'
+          'Could not connect to the session. Please check:\n\n1. Session ID is correct\n2. You are connected to the host\'s hotspot\n3. Host has started the session\n4. Server is accessible at ' + window.location.origin
         );
       }
     } catch (error) {
       console.error('Join session error:', error);
-      alert('Error', 'Failed to join session: ' + error.message);
+      const errorMessage = error.message || 'Unknown error';
+      alert('Failed to join session: ' + errorMessage + '\n\nPlease check:\n1. You are connected to the host\'s hotspot\n2. The server is running\n3. Your network connection is working');
     } finally {
       setIsConnecting(false);
     }
