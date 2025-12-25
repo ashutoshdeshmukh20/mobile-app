@@ -210,12 +210,23 @@ function getLocalIP() {
 app.get('/api/ip', (req, res) => {
   const allIPs = getAllIPs();
   const primaryIP = getLocalIP();
+  
+  // Get client's access method
+  const clientIP = req.ip || req.connection.remoteAddress;
+  const isLocalhost = req.headers.host && (
+    req.headers.host.includes('localhost') || 
+    req.headers.host.includes('127.0.0.1')
+  );
+  
   res.json({
     primary: primaryIP,
     all: allIPs,
     port: PORT,
     url: `http://${primaryIP}:${PORT}`,
-    urls: allIPs.map(ip => `http://${ip}:${PORT}`)
+    urls: allIPs.map(ip => `http://${ip}:${PORT}`),
+    accessedVia: isLocalhost ? 'localhost' : 'network',
+    // Include all network IPs (excluding localhost)
+    networkIPs: allIPs.filter(ip => ip !== 'localhost' && ip !== '127.0.0.1')
   });
 });
 

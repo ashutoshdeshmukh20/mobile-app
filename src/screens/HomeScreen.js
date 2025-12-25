@@ -19,22 +19,29 @@ const HomeScreen = () => {
       if (response.ok) {
         const data = await response.json();
         // Always use network IP, never localhost
-        // If accessed via localhost, show the network IP instead
+        // Prioritize networkIPs array if available, otherwise use all array
+        const networkIPs = data.networkIPs && data.networkIPs.length > 0 
+          ? data.networkIPs 
+          : (data.all && data.all.filter(ip => ip !== 'localhost' && ip !== '127.0.0.1'));
+        
         const currentHost = window.location.hostname;
         if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
           // User accessed via localhost - show network IP
-          const networkIP = data.all && data.all.length > 0 ? data.all[0] : data.primary;
-          if (networkIP && networkIP !== 'localhost') {
+          const networkIP = networkIPs && networkIPs.length > 0 
+            ? networkIPs[0] 
+            : (data.primary && data.primary !== 'localhost' ? data.primary : null);
+          
+          if (networkIP) {
             setLocalIP(networkIP);
-            // Optionally redirect to network IP
             const networkUrl = `http://${networkIP}:${data.port || 3000}`;
             console.log('⚠️ Accessed via localhost. Network IP:', networkUrl);
             console.log('💡 Access via network IP for other devices to connect');
           } else {
+            console.warn('No network IP found. Using primary:', data.primary);
             setLocalIP(data.primary || '');
           }
         } else {
-          // Already using network IP
+          // Already using network IP - use current hostname
           setLocalIP(currentHost);
         }
       } else {
