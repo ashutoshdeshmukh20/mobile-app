@@ -15,8 +15,18 @@ const HomeScreen = () => {
   const getLocalIP = async () => {
     try {
       // Get IP from server API (more reliable than WebRTC)
-      const response = await fetch('/api/ip');
+      const response = await fetch('/api/ip', {
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+      
       if (response.ok) {
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Server returned non-JSON response');
+        }
+        
         const data = await response.json();
         // Always use network IP, never localhost
         // Prioritize networkIPs array if available, otherwise use all array
@@ -45,29 +55,37 @@ const HomeScreen = () => {
           setLocalIP(currentHost);
         }
       } else {
-        // Fallback to WebRTC method if API fails
-        const pc = new RTCPeerConnection({
-          iceServers: [{urls: 'stun:stun.l.google.com:19302'}],
-        });
-        pc.createDataChannel('');
-        pc.onicecandidate = (e) => {
-          if (e.candidate) {
-            const candidate = e.candidate.candidate;
-            const match = candidate.match(/([0-9]{1,3}(\.[0-9]{1,3}){3})/);
-            if (match && !match[1].startsWith('0.') && match[1] !== '127.0.0.1') {
-              setLocalIP(match[1]);
-              pc.close();
-            }
-          }
-        };
-        pc.createOffer().then((offer) => pc.setLocalDescription(offer));
+        console.warn('API /api/ip returned non-OK status:', response.status);
+        throw new Error(`API returned status ${response.status}`);
       }
     } catch (error) {
       console.error('Error getting local IP:', error);
       // Fallback: try to get from window.location
       const currentHost = window.location.hostname;
       if (currentHost && currentHost !== 'localhost' && currentHost !== '127.0.0.1') {
+        console.log('Using current hostname as IP:', currentHost);
         setLocalIP(currentHost);
+      } else {
+        // Last resort: try WebRTC method
+        try {
+          const pc = new RTCPeerConnection({
+            iceServers: [{urls: 'stun:stun.l.google.com:19302'}],
+          });
+          pc.createDataChannel('');
+          pc.onicecandidate = (e) => {
+            if (e.candidate) {
+              const candidate = e.candidate.candidate;
+              const match = candidate.match(/([0-9]{1,3}(\.[0-9]{1,3}){3})/);
+              if (match && !match[1].startsWith('0.') && match[1] !== '127.0.0.1') {
+                setLocalIP(match[1]);
+                pc.close();
+              }
+            }
+          };
+          pc.createOffer().then((offer) => pc.setLocalDescription(offer));
+        } catch (webrtcError) {
+          console.error('WebRTC fallback also failed:', webrtcError);
+        }
       }
     }
   };

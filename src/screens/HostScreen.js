@@ -110,10 +110,17 @@ const HostScreen = () => {
         <div className="info-box">
           <h3 className="info-title">Instructions:</h3>
           <p className="info-text">
-            1. Enable mobile hotspot on your device<br />
-            2. Share the Session ID with riders<br />
-            3. Riders should connect to your hotspot<br />
-            4. Click "Start Session" to begin
+            1. <strong>Enable mobile hotspot</strong> on your device:<br />
+               &nbsp;&nbsp;Settings → Network & Internet → Hotspot & tethering<br />
+               &nbsp;&nbsp;Turn ON mobile hotspot<br />
+            2. <strong>Share the Session ID</strong> with riders<br />
+            3. <strong>Share your network IP</strong> (shown on home screen)<br />
+            4. Riders should connect to your hotspot<br />
+            5. Click "Start Session" to begin
+          </p>
+          <p className="info-text" style={{marginTop: '10px', fontSize: '0.9em', color: '#666'}}>
+            💡 <strong>Note:</strong> Hotspot cannot be enabled automatically for security reasons.<br />
+            &nbsp;&nbsp;Please enable it manually in your device settings.
           </p>
         </div>
       </div>

@@ -39,6 +39,37 @@ const STATIC_IP = process.env.STATIC_IP || config.staticIP || null;
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
+// API routes MUST be defined BEFORE static file serving
+// API endpoint to get server IP address(es)
+app.get('/api/ip', (req, res) => {
+  try {
+    const allIPs = getAllIPs();
+    const primaryIP = getLocalIP();
+    
+    // Get client's access method
+    const clientIP = req.ip || req.connection.remoteAddress;
+    const isLocalhost = req.headers.host && (
+      req.headers.host.includes('localhost') || 
+      req.headers.host.includes('127.0.0.1')
+    );
+    
+    res.setHeader('Content-Type', 'application/json');
+    res.json({
+      primary: primaryIP,
+      all: allIPs,
+      port: PORT,
+      url: `http://${primaryIP}:${PORT}`,
+      urls: allIPs.map(ip => `http://${ip}:${PORT}`),
+      accessedVia: isLocalhost ? 'localhost' : 'network',
+      // Include all network IPs (excluding localhost)
+      networkIPs: allIPs.filter(ip => ip !== 'localhost' && ip !== '127.0.0.1')
+    });
+  } catch (error) {
+    console.error('Error in /api/ip:', error);
+    res.status(500).json({ error: 'Failed to get IP address' });
+  }
+});
+
 // Serve static files from React app (if built)
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'build')));
@@ -206,33 +237,14 @@ function getLocalIP() {
   return 'localhost';
 }
 
-// API endpoint to get server IP address(es)
-app.get('/api/ip', (req, res) => {
-  const allIPs = getAllIPs();
-  const primaryIP = getLocalIP();
-  
-  // Get client's access method
-  const clientIP = req.ip || req.connection.remoteAddress;
-  const isLocalhost = req.headers.host && (
-    req.headers.host.includes('localhost') || 
-    req.headers.host.includes('127.0.0.1')
-  );
-  
-  res.json({
-    primary: primaryIP,
-    all: allIPs,
-    port: PORT,
-    url: `http://${primaryIP}:${PORT}`,
-    urls: allIPs.map(ip => `http://${ip}:${PORT}`),
-    accessedVia: isLocalhost ? 'localhost' : 'network',
-    // Include all network IPs (excluding localhost)
-    networkIPs: allIPs.filter(ip => ip !== 'localhost' && ip !== '127.0.0.1')
-  });
-});
-
-// Fallback route for React Router (production only)
+// Fallback route for React Router (production only) - MUST be last
+// This catches all routes not matched above (like /host, /join, /call)
 if (process.env.NODE_ENV === 'production') {
   app.get('*', (req, res) => {
+    // Don't serve index.html for API routes (shouldn't happen, but safety check)
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ error: 'API endpoint not found' });
+    }
     res.sendFile(path.join(__dirname, 'build', 'index.html'));
   });
 }
