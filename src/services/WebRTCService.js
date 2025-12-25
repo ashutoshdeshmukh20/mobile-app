@@ -31,6 +31,37 @@ class WebRTCService {
   // Initialize local media stream (audio only for voice calls)
   async initializeLocalStream() {
     try {
+      // Check if getUserMedia is available
+      let getUserMedia;
+      
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        // Modern API (preferred)
+        getUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+      } else if (navigator.getUserMedia) {
+        // Legacy API fallback
+        getUserMedia = (constraints) => {
+          return new Promise((resolve, reject) => {
+            navigator.getUserMedia(constraints, resolve, reject);
+          });
+        };
+      } else if (navigator.webkitGetUserMedia) {
+        // WebKit legacy API
+        getUserMedia = (constraints) => {
+          return new Promise((resolve, reject) => {
+            navigator.webkitGetUserMedia(constraints, resolve, reject);
+          });
+        };
+      } else if (navigator.mozGetUserMedia) {
+        // Mozilla legacy API
+        getUserMedia = (constraints) => {
+          return new Promise((resolve, reject) => {
+            navigator.mozGetUserMedia(constraints, resolve, reject);
+          });
+        };
+      } else {
+        throw new Error('getUserMedia is not supported in this browser. Please use HTTPS or a modern browser.');
+      }
+
       const constraints = {
         audio: {
           echoCancellation: true,
@@ -40,7 +71,7 @@ class WebRTCService {
         video: false, // Voice only
       };
 
-      this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+      this.localStream = await getUserMedia(constraints);
       
       if (this.onLocalStream) {
         this.onLocalStream(this.localStream);
@@ -101,9 +132,11 @@ class WebRTCService {
         this.createPeerConnection(userId);
       } else if (this.role === 'client') {
         // Client: create peer connection and send offer to host
+        // IMPORTANT: Create offer even without localStream to receive audio
         const pc = this.createPeerConnection(userId);
-        if (pc && this.localStream) {
+        if (pc) {
           try {
+            console.log('Creating offer as client (localStream available:', !!this.localStream, ')');
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
             if (this.socket) {
@@ -111,10 +144,13 @@ class WebRTCService {
                 offer: offer,
                 to: userId,
               });
+              console.log('Offer sent to host:', userId);
             }
           } catch (error) {
             console.error('Error creating offer:', error);
           }
+        } else {
+          console.error('Failed to create peer connection for client');
         }
       }
     });
@@ -161,18 +197,44 @@ class WebRTCService {
     const configuration = this.getIceServers();
     const pc = new RTCPeerConnection(configuration);
 
-    // Add local stream tracks
+    // Add local stream tracks (if available)
     if (this.localStream) {
       this.localStream.getTracks().forEach(track => {
-        pc.addTrack(track, this.localStream);
+        try {
+          pc.addTrack(track, this.localStream);
+        } catch (error) {
+          console.warn('Error adding track to peer connection:', error);
+        }
       });
     }
 
-    // Handle remote stream
+    // Handle remote stream - this is critical for receiving audio
     pc.ontrack = (event) => {
-      this.remoteStream = event.streams[0];
-      if (this.onRemoteStream) {
-        this.onRemoteStream(this.remoteStream);
+      console.log('Received remote stream track:', event);
+      console.log('Track details:', {
+        kind: event.track?.kind,
+        id: event.track?.id,
+        enabled: event.track?.enabled,
+        readyState: event.track?.readyState,
+        streams: event.streams?.length
+      });
+      
+      if (event.streams && event.streams.length > 0) {
+        this.remoteStream = event.streams[0];
+        console.log('Setting remote stream from event.streams[0]:', this.remoteStream);
+        if (this.onRemoteStream) {
+          this.onRemoteStream(this.remoteStream);
+        }
+      } else if (event.track) {
+        // Fallback: create a stream from the track
+        const stream = new MediaStream([event.track]);
+        this.remoteStream = stream;
+        console.log('Created remote stream from track:', stream);
+        if (this.onRemoteStream) {
+          this.onRemoteStream(this.remoteStream);
+        }
+      } else {
+        console.warn('No stream or track in ontrack event');
       }
     };
 
@@ -317,10 +379,18 @@ class WebRTCService {
         throw new Error('Failed to create peer connection');
       }
       
-      // Ensure local stream is added
-      if (this.localStream && pc.getSenders().length === 0) {
+      // Ensure local stream is added (if available)
+      if (this.localStream) {
+        const existingTracks = pc.getSenders().map(sender => sender.track).filter(Boolean);
         this.localStream.getTracks().forEach(track => {
-          pc.addTrack(track, this.localStream);
+          // Only add if not already added
+          if (!existingTracks.includes(track)) {
+            try {
+              pc.addTrack(track, this.localStream);
+            } catch (error) {
+              console.warn('Error adding track:', error);
+            }
+          }
         });
       }
       
@@ -345,13 +415,19 @@ class WebRTCService {
   // Handle answer from host (client side)
   async handleAnswer(answer, from) {
     try {
+      console.log('Received answer from host:', from);
       let pc = this.connectedPeers.get(from);
       if (!pc) {
         console.error('No peer connection found for', from);
-        return;
+        // Try to create one
+        pc = this.createPeerConnection(from);
+        if (!pc) {
+          throw new Error('Failed to create peer connection');
+        }
       }
       
       await pc.setRemoteDescription(new RTCSessionDescription(answer));
+      console.log('Set remote description (answer) successfully');
     } catch (error) {
       console.error('Error handling answer:', error);
       throw error;

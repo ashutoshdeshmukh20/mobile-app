@@ -35,7 +35,18 @@ const CallScreen = () => {
 
   useEffect(() => {
     if (remoteStream && remoteAudioRef.current) {
+      console.log('Setting remote stream to audio element:', remoteStream);
       remoteAudioRef.current.srcObject = remoteStream;
+      
+      // Force play (some browsers require user interaction)
+      remoteAudioRef.current.play().catch(error => {
+        console.warn('Error playing remote audio:', error);
+      });
+      
+      // Log track information
+      remoteStream.getTracks().forEach(track => {
+        console.log('Remote track:', track.kind, track.id, 'enabled:', track.enabled, 'readyState:', track.readyState);
+      });
     }
   }, [remoteStream]);
 
