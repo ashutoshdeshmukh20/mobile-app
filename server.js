@@ -125,8 +125,20 @@ app.get('/api/ip', (req, res) => {
 });
 
 // Serve static files from React app (if built)
+// IMPORTANT: This must come AFTER API routes
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, 'build')));
+  // Create static middleware
+  const staticMiddleware = express.static(path.join(__dirname, 'build'));
+  
+  // Only serve static files, not API routes
+  app.use((req, res, next) => {
+    // Skip static file serving for API routes
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
+    // Use static middleware for non-API routes
+    return staticMiddleware(req, res, next);
+  });
 } else {
   // In development, proxy to React dev server or serve a simple message
   app.get('/', (req, res) => {
